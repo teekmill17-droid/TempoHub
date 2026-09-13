@@ -4,7 +4,7 @@ One loadstring for every game I support. It checks what place you're in and
 loads the right script, so you never swap the paste out.
 
 ```lua
-loadstring(game:HttpGet("https://raw.githubusercontent.com/teekmill17-droid/TeekHub/main/Loader.lua"))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/teekmill17-droid/TempoHub/main/Loader.lua"))()
 ```
 
 When I add a game or fix something it's there on your next execute. Nothing to
