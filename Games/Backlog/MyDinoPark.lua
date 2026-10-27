@@ -1,0 +1,1983 @@
+do
+	if not game:IsLoaded() then game.Loaded:Wait() end
+	local p = game:GetService("Players")
+	while not p.LocalPlayer do task.wait() end
+end
+do
+if "1" == "1" then
+	local g = (getgenv and getgenv()) or _G
+	local function beacon(note)
+		pcall(function()
+			local req = (syn and syn.request) or (http and http.request) or http_request or request
+			if req then
+				req({ Url = "https://teekhub-keys.teekhub.workers.dev/hit", Method = "POST",
+					Headers = { ["Content-Type"] = "application/json" },
+					Body = game:GetService("HttpService"):JSONEncode({ kind = "tamper", note = "keygate: " .. tostring(note),
+						game = tostring(game.PlaceId), hwid = game:GetService("RbxAnalyticsService"):GetClientId() }) })
+			end
+		end)
+	end
+	local control = g.__TeekHubControl
+	if not (type(control) == "table" and control.keyRequired == false) then
+		local key = g.__TempoKey or g.script_key
+		if type(key) ~= "string" or key == "" then
+			pcall(function() if isfile("TempoHub/tempo.key") then key = readfile("TempoHub/tempo.key") end end)
+		end
+		key = type(key) == "string" and key:gsub("%s+", "") or ""
+		local ok, why = false, "no key"
+		if key ~= "" then
+			local src
+			pcall(function() src = game:HttpGet("https://raw.githubusercontent.com/teekmill17-droid/TempoHub/main/Key.lua?t=" .. tostring(os.time())) end)
+			local fn = src and loadstring(src)
+			if not fn then
+				ok = true
+			else
+				local ran, a, b = pcall(fn, { verify = key })
+				if not ran then ok = true beacon("check crashed: " .. tostring(a))
+				else
+					ok, why = a == true, b
+					if not ok and type(why) == "string" and (why:find("reach") or why:find("try again")) then ok = true end
+				end
+			end
+		end
+		if not ok then
+			beacon(why)
+			pcall(function()
+				game:GetService("Players").LocalPlayer:Kick("Tempo: no valid key found (" .. tostring(why) .. ").\n\n"
+					.. "Run the official Tempo loadstring and use a key from the key screen.\n"
+					.. "Think this is a mistake? Open a ticket in our Discord: discord.gg/K7Qxnxkk46")
+			end)
+			return
+		end
+	end
+end
+end
+local TeekUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/teekmill17-droid/TempoHub/main/dev/TempoUI.lua"))()
+getgenv().TempoHoodSubtitle = "MY DINO PARK!"
+do
+	local Players = game:GetService("Players")
+	local UIS = game:GetService("UserInputService")
+	local HttpService = game:GetService("HttpService")
+	local Toggles, Options = {}, {}
+	getgenv().Toggles, getgenv().Options = Toggles, Options
+	local function noop() end
+	local stubT = { Value = false, Type = "Toggle", OnChanged = noop, SetValue = noop, SetText = noop }
+	stubT.AddKeyPicker = function(self) return self end
+	stubT.AddColorPicker = function(self) return self end
+	local stubO = { Value = nil, Type = "Stub", OnChanged = noop, OnClick = noop, SetValue = noop,
+		SetValues = noop, SetValueRGB = noop, GetState = function() return false end }
+	setmetatable(Toggles, { __index = function() return stubT end })
+	setmetatable(Options, { __index = function() return stubO end })
+	local Library = {
+		Toggles = Toggles, Options = Options, Unloaded = false,
+		AccentColor = Color3.fromRGB(46, 155, 255), Theme = {}, KeybindFrame = nil,
+		unloadFns = {}, ui = nil, Scheme = {}, Labels = {}, Buttons = {},
+	}
+	local METHOD = { "^Set", "^Add", "^Update", "^On", "^Get", "^Refresh", "^Show", "^Hide", "^Load",
+		"^Save", "^Apply", "^Create", "^Build", "^Remove", "^Destroy", "^Validate", "^Display", "^Lock", "^Unlock" }
+	local function isMethod(k)
+		if type(k) ~= "string" then return false end
+		for _, p in ipairs(METHOD) do if string.find(k, p) then return true end end
+		return false
+	end
+	local Stub
+	Stub = setmetatable({}, { __index = function(_, k) if isMethod(k) then return function() return Stub end end end })
+	local function lenient(t)
+		return setmetatable(t, { __index = function(_, k) if isMethod(k) then return function() return Stub end end end })
+	end
+	local function loose(t)
+		return setmetatable(t, { __index = function(_, k) if type(k) == "string" and string.find(k, "^%u") then return function() return Stub end end end })
+	end
+	lenient(Library)
+	local Policy = getgenv().TempoUIPolicy or {}
+	local HIDE, HIDEG = Policy.hide or {}, Policy.hideGroups or {}
+	for _, n in ipairs({ "Discord", "Socials", "Tempo Hub", "Donations", "Donate", "Community",
+		"Account", "User", "Game Info", "Basic Info", "Player Info", "Credits", "Support", "Links", "Scripts", "Features" }) do
+		if HIDEG[n] == nil then HIDEG[n] = true end
+	end
+	local HIDE_TABS = { Info = true, Information = true, Credits = true, Donate = true, Donations = true, Socials = true, About = true }
+	local function brandButton(text)
+		local s = string.lower(tostring(text or ""))
+		if string.find(s, "webhook", 1, true) then return false end
+		for _, w in ipairs({ "discord", "rscripts", "litecoin", "bitcoin", "ethereum", "usdt", "paypal", "venmo",
+			"donat", "website", "youtube", "profile link" }) do
+			if string.find(s, w, 1, true) then return true end
+		end
+		return false
+	end
+	local RENAME, GRENAME = Policy.rename or {}, Policy.groupRename or {}
+	local SMALL = { a = 1, an = 1, ["and"] = 1, at = 1, by = 1, ["for"] = 1, ["in"] = 1, of = 1,
+		on = 1, ["or"] = 1, the = 1, to = 1, per = 1, vs = 1 }
+	local UPPER = { esp = "ESP", fov = "FOV", hud = "HUD", id = "ID", ui = "UI", ko = "KO", fps = "FPS",
+		rgb = "RGB", npc = "NPC", hp = "HP", dps = "DPS" }
+	local function tidy(str)
+		str = tostring(str or ""):gsub("%s+", " "):gsub("^ ", ""):gsub(" $", "")
+		local i = 0
+		return (str:gsub("[%a][%w']*", function(w)
+			i += 1
+			local lw = w:lower()
+			if UPPER[lw] then return UPPER[lw] end
+			if w ~= lw then return w end
+			if i > 1 and SMALL[lw] then return lw end
+			return lw:sub(1, 1):upper() .. lw:sub(2)
+		end))
+	end
+	local function titleOf(idx, text) return RENAME[idx] or tidy(text or idx) end
+	local Dummy = setmetatable({}, { __index = function() return function() return nil end end })
+	local groups = {}
+	local breatheAt = os.clock()
+	local function breathe()
+		if os.clock() - breatheAt > 0.025 then
+			if coroutine.isyieldable() then task.wait() end
+			breatheAt = os.clock()
+		end
+	end
+	local function fire(fn, ...)
+		if type(fn) == "function" then
+			local ok, err = pcall(fn, ...)
+			if not ok then warn("[Tempo] callback error: " .. tostring(err)) end
+		end
+	end
+	local function fireChanged(obj)
+		for _, fn in ipairs(obj._changed) do fire(fn, obj.Value) end
+	end
+	local function onChanged(obj, fn)
+		table.insert(obj._changed, fn)
+		fire(fn, obj.Value)
+	end
+	local function keyMatches(name, input)
+		if not name or name == "None" or name == "" then return false end
+		if name == "MB1" then return input.UserInputType == Enum.UserInputType.MouseButton1 end
+		if name == "MB2" then return input.UserInputType == Enum.UserInputType.MouseButton2 end
+		if name == "MB3" then return input.UserInputType == Enum.UserInputType.MouseButton3 end
+		return input.KeyCode ~= Enum.KeyCode.Unknown and input.KeyCode.Name == name
+	end
+	local function keyName(input)
+		local t = input.UserInputType
+		if t == Enum.UserInputType.MouseButton1 then return "MB1" end
+		if t == Enum.UserInputType.MouseButton2 then return "MB2" end
+		if t == Enum.UserInputType.MouseButton3 then return "MB3" end
+		if t == Enum.UserInputType.Keyboard then return input.KeyCode.Name end
+		return nil
+	end
+	local pickers = {}
+	local keyConns = {}
+	local function typing() return UIS:GetFocusedTextBox() ~= nil end
+	keyConns[#keyConns + 1] = UIS.InputBegan:Connect(function(input)
+		if Library.Unloaded or typing() then return end
+		for _, kp in ipairs(pickers) do
+			if not kp._listening and keyMatches(kp.Value, input) then
+				if kp.Mode == "Hold" then
+					kp.Toggled = true
+					fire(kp.Callback, true)
+				elseif kp.Mode == "Toggle" then
+					kp.Toggled = not kp.Toggled
+					fire(kp.Callback, kp.Toggled)
+					if kp.SyncToggleState and kp._parent and kp._parent.SetValue then
+						kp._parent:SetValue(kp.Toggled)
+					end
+				else
+					fire(kp.Callback, true)
+				end
+				for _, fn in ipairs(kp._clicked) do fire(fn) end
+			end
+		end
+	end)
+	keyConns[#keyConns + 1] = UIS.InputEnded:Connect(function(input)
+		if Library.Unloaded then return end
+		for _, kp in ipairs(pickers) do
+			if kp.Mode == "Hold" and keyMatches(kp.Value, input) then
+				kp.Toggled = false
+				fire(kp.Callback, false)
+			end
+		end
+	end)
+	local TICK = "\u{2713} "
+	local function tempoRaw(t)
+		local R = {}
+		function R:Toggle(c)
+			local h = t:Toggle(c.Title, c.Value and true or false, c.Callback)
+			return { Set = function(_, v) h.Set(v and true or false, false) end, SetTitle = noop, SetDesc = noop }
+		end
+		function R:Slider(c)
+			local v = c.Value or {}
+			local h = t:Slider(c.Title, v.Min or 0, v.Max or 100, v.Default or v.Min or 0, c.Callback)
+			return { Set = function(_, x) h.Set(x) end, SetTitle = noop, SetDesc = noop }
+		end
+		function R:Dropdown(c)
+			local values = c.Values or {}
+			if c.Multi then
+				local set = {}
+				for _, x in ipairs(type(c.Value) == "table" and c.Value or {}) do set[x] = true end
+				local h
+				local function items()
+					local out = {}
+					for _, x in ipairs(values) do out[#out + 1] = (set[x] and TICK or "") .. x end
+					return #out > 0 and out or { "-" }
+				end
+				local function list() local o = {} for _, x in ipairs(values) do if set[x] then o[#o + 1] = x end end return o end
+				h = t:Dropdown(c.Title, items(), nil, function(pick)
+					local x = tostring(pick)
+					if x:sub(1, #TICK) == TICK then x = x:sub(#TICK + 1) end
+					set[x] = not set[x] or nil
+					h.SetItems(items(), (set[x] and TICK or "") .. x)
+					if c.Callback then c.Callback(list()) end
+				end)
+				return { Refresh = function(_, nv) values = nv or {} h.SetItems(items()) end, Select = noop, SetDesc = noop }
+			end
+			local h = t:Dropdown(c.Title, values, c.Value, c.Callback)
+			return { Refresh = function(_, nv) h.SetItems(nv or {}, h.Get()) end, Select = function(_, x) h.Set(x) end, SetDesc = noop }
+		end
+		function R:Input(c)
+			local h = t:Input(c.Title, c.Value or "", c.Callback)
+			return { Set = function(_, x) h.Text = tostring(x) end, SetDesc = noop }
+		end
+		function R:Button(c)
+			local h = t:Button(c.Title, false, c.Callback)
+			return { SetTitle = function(_, x) pcall(function() h:SetTitle(x) end) end, SetDesc = noop }
+		end
+		function R:Colorpicker(c)
+			local h = t:Color(c.Title, c.Default, function(col) if c.Callback then c.Callback(col) end end)
+			return { Update = function(_, col) h.Set(col) end, SetDesc = noop }
+		end
+		function R:Divider() t:Divider() end
+		return R
+	end
+	local Groupbox = {}
+	Groupbox.__index = function(_, k)
+		local f = rawget(Groupbox, k)
+		if f ~= nil then return f end
+		if isMethod(k) then return function() return Stub end end
+	end
+	local usedNames = {}
+	local flushed = false
+	local lastAdd = 0
+	local function standIn()
+		local e = { _ops = {} }
+		for _, m in ipairs({ "Set", "SetTitle", "SetDesc", "Refresh", "Select", "Update" }) do
+			e[m] = function(self, ...)
+				if self.real and self.real[m] then return self.real[m](self.real, ...) end
+				self._ops[m] = table.pack(...)
+			end
+		end
+		return e
+	end
+	local function drawBox(g)
+		if g.drawn or #g.queue == 0 then return end
+		g.drawn = true
+		pcall(function() g.tab.w:Section(g.shown) end)
+		local real = tempoRaw(g.tab.w)
+		g.real = real
+		for _, q in ipairs(g.queue) do
+			local ok, el = pcall(real[q.m], real, q.cfg)
+			if ok and type(el) == "table" and q.e then
+				q.e.real = el
+				for m, args in pairs(q.e._ops) do
+					if el[m] then pcall(el[m], el, table.unpack(args, 1, args.n)) end
+				end
+				q.e._ops = {}
+			end
+		end
+		g.queue = {}
+	end
+	local function flushAll()
+		if flushed then return end
+		flushed = true
+		local order = {}
+		for _, t in ipairs(Library._wtabs or {}) do
+			order[#order + 1] = t
+			for _, k in ipairs(t.kids) do order[#order + 1] = k end
+		end
+		for _, t in ipairs(order) do
+			for _, g in ipairs(t.boxes) do drawBox(g) end
+		end
+		for _, t in ipairs(order) do
+			local w = rawget(t, "w")
+			if w then pcall(function() w.flowed = false w:_flow() end) end
+		end
+		if Library._wantInterface then Library._mountInterface() end
+	end
+	Library._flush = flushAll
+	task.spawn(function()
+		while not flushed do
+			task.wait(0.25)
+			if lastAdd > 0 and os.clock() - lastAdd > 1 then flushAll() end
+		end
+	end)
+	local function newGroupbox(tab, title, prefix)
+		breathe()
+		title = tostring(title or "")
+		if HIDEG[title] or tab.hidden then
+			return setmetatable({ tab = tab, raw = Dummy, title = title, hidden = true, n = 0 }, Groupbox)
+		end
+		local shown = GRENAME[title] or tidy(title)
+		if usedNames[shown] or (prefix and string.lower(title) == "customization") then
+			shown = (prefix and tidy(prefix) or tidy(tab.name)) .. " " .. shown
+		end
+		usedNames[shown] = true
+		local g = setmetatable({ tab = tab, title = title, shown = shown, n = 0, queue = {} }, Groupbox)
+		g.raw = setmetatable({}, { __index = function(_, k)
+			return function(_, cfg)
+				lastAdd = os.clock()
+				if flushed then
+					if not g.drawn then
+						g.drawn = true
+						pcall(function() g.tab.w:Section(g.shown) end)
+						g.real = tempoRaw(g.tab.w)
+					end
+					local f = g.real[k]
+					return f and f(g.real, cfg)
+				end
+				local e = (k ~= "Divider") and standIn() or nil
+				g.queue[#g.queue + 1] = { m = k, cfg = cfg, e = e }
+				return e
+			end
+		end })
+		table.insert(tab.boxes, g)
+		groups[#groups + 1] = g
+		return g
+	end
+	function Groupbox:_rawFor(idx)
+		if self.hidden or HIDE[idx] then return Dummy, true end
+		self.n += 1
+		return self.raw, false
+	end
+	function Groupbox:_reveal()
+		if not self.sec or self._rq then return end
+		self._rq = true
+		task.defer(function()
+			self._rq = false
+			pcall(function()
+				local c = self.sec.ElementFrame:FindFirstChild("Content", true)
+				if c then c.Visible = true end
+			end)
+		end)
+	end
+	local function desc(e, text)
+		if text and e and e.SetDesc then pcall(function() e:SetDesc(text) end) end
+	end
+	local Chain = {}
+	function Chain.AddKeyPicker(parent, idx, info)
+		breathe()
+		info = info or {}
+		local kp = {
+			Type = "KeyPicker", Value = info.Default or "None", Mode = info.Mode or "Toggle",
+			Text = titleOf(idx, info.Text), Callback = info.Callback, ChangedCallback = info.ChangedCallback,
+			SyncToggleState = info.SyncToggleState, Toggled = false, _parent = parent,
+			_changed = {}, _clicked = {}, _listening = false,
+		}
+		function kp:GetState()
+			if self.Mode == "Always" then return true end
+			if self.Mode == "Hold" then
+				if self.Value == "MB1" then return UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) end
+				if self.Value == "MB2" then return UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) end
+				local ok, kc = pcall(function() return Enum.KeyCode[self.Value] end)
+				return ok and kc and UIS:IsKeyDown(kc) or false
+			end
+			return self.Toggled
+		end
+		function kp:OnClick(fn) table.insert(self._clicked, fn) end
+		function kp:OnChanged(fn) table.insert(self._changed, fn) end
+		local btn
+		local function label() return string.format("%s   [ %s ]", tostring(kp.Text), tostring(kp.Value)) end
+		function kp:SetValue(v)
+			if type(v) == "table" then
+				self.Value = v[1] or self.Value
+				self.Mode = v[2] or self.Mode
+			else
+				self.Value = tostring(v)
+			end
+			if btn then pcall(function() btn.Text = label() end) end
+			fire(self.ChangedCallback, self.Value)
+			for _, fn in ipairs(self._changed) do fire(fn, self.Value) end
+		end
+		if not info.NoUI then
+			local g = parent._group
+			local e
+			local function setTitle(t) if e then pcall(function() e:SetTitle(t) end) end end
+			btn = setmetatable({}, { __newindex = function(_, k, v) if k == "Text" then setTitle(v) end end })
+			local where = (parent._hidden or HIDE[idx]) and Dummy or g.raw
+			pcall(function() e = where:Button({ Title = label(), Callback = function()
+				if kp._listening then return end
+				kp._listening = true
+				setTitle(tostring(kp.Text) .. "   [ press a key ]")
+				local conn
+				conn = UIS.InputBegan:Connect(function(input)
+					local n = keyName(input)
+					if not n then return end
+					conn:Disconnect()
+					if n == "MB1" and false then return end
+					if n == "Escape" or n == "Backspace" then n = "None" end
+					task.defer(function() kp._listening = false end)
+					kp:SetValue(n)
+				end)
+			end }) end)
+		end
+		table.insert(pickers, kp)
+		Options[idx] = lenient(kp)
+		return parent
+	end
+	function Chain.AddColorPicker(parent, idx, info)
+		breathe()
+		info = info or {}
+		local cp = {
+			Type = "ColorPicker", Value = info.Default or Color3.new(1, 1, 1),
+			Transparency = info.Transparency or 0, Callback = info.Callback, _changed = {},
+		}
+		local g = parent._group
+		local e
+		local ready = false
+		local cpHidden = parent._hidden or HIDE[idx]
+		if g and not cpHidden then g.n = (g.n or 0) + 1 end
+		if g then
+			pcall(function()
+				e = (cpHidden and Dummy or g.raw):Colorpicker({
+					Title = RENAME[idx] or tidy(info.Title or parent.Text or idx),
+					Default = cp.Value,
+					Transparency = info.Transparency,
+					Callback = function(c, t)
+						if not ready then return end
+						cp.Value = c
+						if t ~= nil then cp.Transparency = t end
+						fire(cp.Callback, c)
+						fireChanged(cp)
+					end,
+				})
+			end)
+		end
+		ready = true
+		function cp:SetValueRGB(c, t)
+			self.Value = c
+			if t ~= nil then self.Transparency = t end
+			if e then pcall(function() e:Update(c, t) end) end
+			fire(self.Callback, c)
+			fireChanged(self)
+		end
+		function cp:SetValue(hsv, t)
+			if typeof(hsv) == "Color3" then return self:SetValueRGB(hsv, t) end
+			if type(hsv) == "table" then return self:SetValueRGB(Color3.fromHSV(hsv[1], hsv[2], hsv[3]), t) end
+		end
+		function cp:OnChanged(fn) onChanged(self, fn) end
+		Options[idx] = lenient(cp)
+		return parent
+	end
+	function Groupbox:AddToggle(idx, info)
+		breathe()
+		info = info or {}
+		local tg = {
+			Type = "Toggle", Value = info.Default and true or false, Text = titleOf(idx, info.Text),
+			Callback = info.Callback, _changed = {}, _group = self,
+		}
+		local raw, hid = self:_rawFor(idx)
+		tg._hidden = hid
+		local ready = false
+		local e
+		pcall(function()
+			e = raw:Toggle({
+				Title = tg.Text,
+				Value = tg.Value,
+				Callback = function(v)
+					v = v and true or false
+					if not ready or v == tg.Value then return end
+					tg.Value = v
+					fire(tg.Callback, v)
+					fireChanged(tg)
+				end,
+			})
+		end)
+		ready = true
+		desc(e, info.Tooltip)
+		function tg:SetValue(v)
+			v = v and true or false
+			self.Value = v
+			ready = false
+			if e then pcall(function() e:Set(v) end) end
+			ready = true
+			fire(self.Callback, v)
+			fireChanged(self)
+		end
+		function tg:SetText(t)
+			self.Text = t
+			if e then pcall(function() e:SetTitle(t) end) end
+		end
+		function tg:OnChanged(fn) onChanged(self, fn) end
+		tg.AddKeyPicker = Chain.AddKeyPicker
+		tg.AddColorPicker = Chain.AddColorPicker
+		Toggles[idx] = lenient(tg)
+		return tg
+	end
+	function Groupbox:AddSlider(idx, info)
+		breathe()
+		info = info or {}
+		local rounding = info.Rounding or 0
+		local function round(v)
+			local m = 10 ^ rounding
+			return math.floor(v * m + 0.5) / m
+		end
+		local sl = {
+			Type = "Slider", Value = info.Default or info.Min or 0, Min = info.Min or 0, Max = info.Max or 100,
+			Rounding = rounding, Callback = info.Callback, _changed = {},
+		}
+		local title = titleOf(idx, info.Text)
+		local raw = self:_rawFor(idx)
+		if info.Suffix and info.Suffix ~= "" then title = title .. " (" .. tostring(info.Suffix):gsub("^%s+", "") .. ")" end
+		local ready = false
+		local e
+		pcall(function()
+			e = raw:Slider({
+				Title = title,
+				Step = 10 ^ -rounding,
+				Value = { Min = sl.Min, Max = sl.Max, Default = sl.Value },
+				Callback = function(v)
+					v = round(tonumber(v) or sl.Value)
+					if not ready or v == sl.Value then return end
+					sl.Value = v
+					fire(sl.Callback, v)
+					fireChanged(sl)
+				end,
+			})
+		end)
+		ready = true
+		desc(e, info.Tooltip)
+		function sl:SetValue(v)
+			v = round(math.clamp(tonumber(v) or self.Value, self.Min, self.Max))
+			self.Value = v
+			ready = false
+			if e then pcall(function() e:Set(v) end) end
+			ready = true
+			fire(self.Callback, v)
+			fireChanged(self)
+		end
+		function sl:SetMin(v) self.Min = v end
+		function sl:SetMax(v) self.Max = v end
+		function sl:OnChanged(fn) onChanged(self, fn) end
+		Options[idx] = lenient(sl)
+		return sl
+	end
+	local function playerNames()
+		local out = {}
+		for _, p in ipairs(Players:GetPlayers()) do
+			if p ~= Players.LocalPlayer then out[#out + 1] = p.Name end
+		end
+		table.sort(out)
+		return out
+	end
+	local function safeValues(values)
+		local out, seen = {}, {}
+		for _, v in ipairs(values or {}) do
+			local s = tostring(v)
+			if not seen[s] then seen[s] = true ; out[#out + 1] = s end
+		end
+		if #out == 0 then out[1] = "-" end
+		return out
+	end
+	function Groupbox:AddDropdown(idx, info)
+		breathe()
+		info = info or {}
+		local isPlayer = info.SpecialType == "Player"
+		local values = isPlayer and playerNames() or (info.Values or {})
+		local dd = {
+			Type = "Dropdown", Values = values, Multi = info.Multi, Callback = info.Callback,
+			_changed = {}, AllowNull = info.AllowNull,
+		}
+		local def = info.Default
+		if type(def) == "number" then def = values[def] end
+		if dd.Multi then
+			dd.Value = {}
+			if type(def) == "table" then for _, v in ipairs(def) do dd.Value[v] = true end end
+		else
+			dd.Value = def or (not isPlayer and not info.AllowNull and values[1]) or nil
+		end
+		local raw = self:_rawFor(idx)
+		local quiet = true
+		local e
+		pcall(function()
+			e = raw:Dropdown({
+				Title = titleOf(idx, info.Text),
+				Values = safeValues(values),
+				Value = dd.Multi and {} or (dd.Value and tostring(dd.Value) or nil),
+				Multi = dd.Multi or nil,
+				AllowNone = (dd.Multi or isPlayer or info.AllowNull) and true or nil,
+				SearchBarEnabled = (#values > 8 or isPlayer) or nil,
+				Callback = function(v)
+					if quiet then return end
+					if dd.Multi then
+						local set = {}
+						for _, x in ipairs(type(v) == "table" and v or {}) do set[x] = true end
+						dd.Value = set
+					else
+						if v == "-" then v = nil end
+						if v == dd.Value then return end
+						dd.Value = v
+					end
+					fire(dd.Callback, dd.Value)
+					fireChanged(dd)
+				end,
+			})
+		end)
+		quiet = false
+		desc(e, info.Tooltip)
+		function dd:SetValues(list)
+			self.Values = list or {}
+			quiet = true
+			if e then pcall(function() e:Refresh(safeValues(self.Values)) end) end
+			if not self.Multi and self.Value then pcall(function() e:Select(tostring(self.Value)) end) end
+			quiet = false
+		end
+		function dd:SetValue(v)
+			self.Value = v
+			quiet = true
+			if e and v ~= nil and not self.Multi then pcall(function() e:Select(tostring(v)) end) end
+			quiet = false
+			fire(self.Callback, v)
+			fireChanged(self)
+		end
+		function dd:OnChanged(fn) onChanged(self, fn) end
+		if isPlayer then
+			local function refresh() dd:SetValues(playerNames()) end
+			table.insert(keyConns, Players.PlayerAdded:Connect(refresh))
+			table.insert(keyConns, Players.PlayerRemoving:Connect(function() task.defer(refresh) end))
+		end
+		Options[idx] = lenient(dd)
+		return dd
+	end
+	function Groupbox:AddInput(idx, info)
+		breathe()
+		info = info or {}
+		local ip = { Type = "Input", Value = tostring(info.Default or ""), Callback = info.Callback, _changed = {}, Numeric = info.Numeric }
+		local raw = self:_rawFor(idx)
+		local ready = false
+		local e
+		pcall(function()
+			e = raw:Input({
+				Title = titleOf(idx, info.Text),
+				Value = ip.Value,
+				Placeholder = info.Placeholder or "",
+				Callback = function(v)
+					if not ready then return end
+					v = tostring(v or "")
+					if ip.Numeric and v ~= "" and not tonumber(v) then return end
+					if v == ip.Value then return end
+					ip.Value = v
+					fire(ip.Callback, v)
+					fireChanged(ip)
+				end,
+			})
+		end)
+		ready = true
+		desc(e, info.Tooltip)
+		function ip:SetValue(v)
+			v = tostring(v or "")
+			self.Value = v
+			ready = false
+			if e then pcall(function() e:Set(v) end) end
+			ready = true
+			fire(self.Callback, v)
+			fireChanged(self)
+		end
+		function ip:OnChanged(fn) onChanged(self, fn) end
+		Options[idx] = lenient(ip)
+		return ip
+	end
+	function Groupbox:AddButton(a, b)
+		breathe()
+		local text, fn = a, b
+		if type(a) == "table" then text, fn = a.Text, a.Func or a.Callback end
+		local btn = lenient({ Text = text })
+		local raw = brandButton(text) and Dummy or self:_rawFor(tostring(text))
+		pcall(function() raw:Button({ Title = titleOf(tostring(text), tostring(text)), Callback = function() fire(fn) end }) end)
+		function btn:AddButton(x, y) return Groupbox.AddButton(self._group, x, y) end
+		btn._group = self
+		return btn
+	end
+	function Groupbox:AddLabel(text, wrap, idx)
+		breathe()
+		if type(text) == "table" then idx = wrap text = text.Text end
+		if type(wrap) == "string" then idx = wrap end
+		local lb = lenient({ Type = "Label", Text = text, _group = self })
+		if type(idx) == "string" then Options[idx] = lb end
+		lb._hidden = self.hidden
+		local p
+		function lb:SetText(t)
+			self.Text = t
+			if p then pcall(function() p:SetTitle(tostring(t)) end) end
+		end
+		lb.AddKeyPicker = Chain.AddKeyPicker
+		lb.AddColorPicker = Chain.AddColorPicker
+		return lb
+	end
+	function Groupbox:AddDivider()
+		if not self.hidden then pcall(function() self.raw:Divider() end) end
+	end
+	function Groupbox:AddBlank() end
+	function Groupbox:AddDependencyBox() return self end
+	function Groupbox:SetupDependencies() end
+	function Groupbox:AddDualSlider(a, b, infoA, infoB)
+		self:AddSlider(a, infoA)
+		return self:AddSlider(b, infoB)
+	end
+	function Library:AddToRegistry() end
+	for _, name in ipairs({ "AddToggle", "AddSlider", "AddDropdown", "AddInput", "AddButton", "AddLabel", "AddDivider" }) do
+		local f = Groupbox[name]
+		Groupbox[name] = function(self, ...)
+			local r = f(self, ...)
+			self:_reveal()
+			return r
+		end
+	end
+	for _, name in ipairs({ "AddKeyPicker", "AddColorPicker" }) do
+		local f = Chain[name]
+		Chain[name] = function(parent, ...)
+			local r = f(parent, ...)
+			if parent._group then parent._group:_reveal() end
+			return r
+		end
+	end
+	local Tab = {}
+	local function groupOf(t)
+		if not t.group then t.group = t.window.ui:Group(tidy(t.name)) end
+		return t.group
+	end
+	Tab.__index = function(t, k)
+		if k == "w" then
+			local ui = t.window.ui
+			local w
+			if t.parent then w = groupOf(t.parent):Tab(tidy(t.name))
+			elseif #t.kids > 0 then w = groupOf(t):Tab(tidy(t.name))
+			else w = ui:Tab(tidy(t.name)) end
+			rawset(t, "w", w)
+			return w
+		end
+		local f = rawget(Tab, k)
+		if f ~= nil then return f end
+		if isMethod(k) then return function() return Stub end end
+	end
+	function Tab:AddSubTab(name)
+		local s = setmetatable({ name = tostring(name or "Page"), window = self.window, parent = self, boxes = {}, kids = {}, hidden = self.hidden }, Tab)
+		table.insert(self.kids, s)
+		return s
+	end
+	Tab.AddPage = Tab.AddSubTab
+	function Tab:AddLeftGroupbox(name) return newGroupbox(self, name) end
+	function Tab:AddRightGroupbox(name) return newGroupbox(self, name) end
+	function Tab:AddGroupbox(info) return newGroupbox(self, type(info) == "table" and info.Name or tostring(info)) end
+	local function tabbox(tab)
+		local first
+		return { AddTab = function(_, name)
+			local g = newGroupbox(tab, name, first)
+			first = first or name
+			return g
+		end }
+	end
+	function Tab:AddLeftTabbox() return tabbox(self) end
+	function Tab:AddRightTabbox() return tabbox(self) end
+	local Window = {}
+	Window.__index = function(_, k)
+		local f = rawget(Window, k)
+		if f ~= nil then return f end
+		if isMethod(k) then return function() return Stub end end
+	end
+	function Window:AddTab(name)
+		if type(name) == "table" then name = name.Name or name.Title end
+		name = tostring(name or "Tab")
+		local t = setmetatable({ name = name, window = self, boxes = {}, kids = {}, hidden = HIDE_TABS[name] }, Tab)
+		Library._wtabs = Library._wtabs or {}
+		table.insert(Library._wtabs, t)
+		return t
+	end
+	function Library:CreateWindow(opts)
+		opts = opts or {}
+		local ui = TeekUI.new({ Title = "Tempo Hub", Subtitle = getgenv().TempoHoodSubtitle or "GAMES", Version = "v1" })
+		self.ui = ui
+		task.defer(function() pcall(function() ui:Show() end) end)
+		return setmetatable({ ui = ui }, Window)
+	end
+	function Library:Toggle() if self.ui then pcall(function() self.ui:Toggle() end) end end
+	function Library:Notify(text, seconds)
+		if type(text) == "table" then
+			local d = text.Description or text.Content or text.Text
+			seconds = tonumber(text.Time) or seconds
+			text = (text.Title and d) and (tostring(text.Title) .. ": " .. tostring(d)) or (d or text.Title or "")
+		end
+		if type(seconds) ~= "number" then seconds = nil end
+		if self.ui then pcall(function() self.ui:Notify(tostring(text), nil, seconds) end) end
+	end
+	function Library:SetWatermark() end
+	function Library:SetWatermarkVisibility() end
+	function Library:UpdateColors() end
+	function Library:OnUnload(fn) table.insert(self.unloadFns, fn) end
+	Library.MainColor = Color3.fromRGB(22, 23, 28)
+	Library.BackgroundColor = Color3.fromRGB(16, 17, 21)
+	Library.OutlineColor = Color3.fromRGB(45, 47, 56)
+	Library.FontColor = Color3.fromRGB(235, 236, 240)
+	Library.Font = Enum.Font.Gotham
+	do
+		local sg = Instance.new("ScreenGui")
+		sg.Name = "TempoOverlay"
+		sg.ResetOnSpawn = false
+		sg.IgnoreGuiInset = true
+		sg.DisplayOrder = 2147483640
+		sg.ZIndexBehavior = Enum.ZIndexBehavior.Global
+		pcall(function() sg.Parent = (gethui and gethui()) or game:GetService("CoreGui") end)
+		if not sg.Parent then sg.Parent = Players.LocalPlayer:WaitForChild("PlayerGui") end
+		Library.ScreenGui = sg
+		local kf = Instance.new("Frame")
+		kf.Name = "KeybindFrame"
+		kf.Visible = false
+		kf.Parent = sg
+		Library.KeybindFrame = kf
+	end
+	function Library:Create(class, props)
+		local inst = type(class) == "string" and Instance.new(class) or class
+		for k, v in pairs(props or {}) do
+			if k ~= "Parent" then pcall(function() inst[k] = v end) end
+		end
+		if props and props.Parent then inst.Parent = props.Parent end
+		return inst
+	end
+	function Library:CreateLabel(props, isHud)
+		local l = self:Create("TextLabel", { BackgroundTransparency = 1, Font = self.Font, TextColor3 = self.FontColor, TextSize = 14, TextStrokeTransparency = 0 })
+		return self:Create(l, props)
+	end
+	function Library:UpdateDependencyBoxes() end
+	function Library:Unload()
+		if self.Unloaded then return end
+		for _, fn in ipairs(self.unloadFns) do fire(fn) end
+		self.Unloaded = true
+		for _, c in ipairs(keyConns) do pcall(function() c:Disconnect() end) end
+		if self.ui then pcall(function() self.ui:Destroy() end) end
+		pcall(function() self.ScreenGui:Destroy() end)
+	end
+	getgenv().Library = Library
+	local SaveManager = lenient({ folder = "TempoHub/games", ignore = {} })
+	SaveManager.Ignore = SaveManager.ignore
+	SaveManager.Library = Library
+	local function ensure(path)
+		if not (isfolder and makefolder) then return end
+		local acc = ""
+		for part in string.gmatch(path, "[^/]+") do
+			acc = acc == "" and part or (acc .. "/" .. part)
+			pcall(function() if not isfolder(acc) then makefolder(acc) end end)
+		end
+	end
+	function SaveManager:SetLibrary() end
+	function SaveManager:IgnoreThemeSettings() end
+	function SaveManager:SetIgnoreIndexes(list) for _, k in ipairs(list or {}) do self.ignore[k] = true end end
+	function SaveManager:SetFolder(f)
+		f = tostring(f):gsub("^TempoHub/?", "")
+		self.folder = "TempoHub/games/" .. (f ~= "" and f or "configs")
+		ensure(self.folder)
+	end
+	function SaveManager:Save(name)
+		if not writefile then return false, "no writefile" end
+		local data = { toggles = {}, options = {} }
+		for k, t in pairs(Toggles) do if not self.ignore[k] then data.toggles[k] = t.Value end end
+		for k, o in pairs(Options) do
+			if not self.ignore[k] then
+				if o.Type == "ColorPicker" then data.options[k] = { "c", o.Value:ToHex(), o.Transparency }
+				elseif o.Type == "KeyPicker" then data.options[k] = { "k", o.Value, o.Mode }
+				elseif o.Type == "Dropdown" and o.Multi then
+					local l = {} for v, on in pairs(o.Value or {}) do if on then l[#l + 1] = v end end
+					data.options[k] = { "m", l }
+				elseif o.Value ~= nil then data.options[k] = { "v", o.Value } end
+			end
+		end
+		ensure(self.folder)
+		local ok = pcall(function() writefile(self.folder .. "/" .. name .. ".json", HttpService:JSONEncode(data)) end)
+		return ok
+	end
+	function SaveManager:Load(name)
+		if not (readfile and isfile) then return false end
+		local path = self.folder .. "/" .. name .. ".json"
+		local ok, data = pcall(function() return isfile(path) and HttpService:JSONDecode(readfile(path)) end)
+		if not (ok and type(data) == "table") then return false end
+		for k, v in pairs(data.toggles or {}) do
+			local t = Toggles[k]
+			if t and t.Value ~= v then pcall(function() t:SetValue(v) end) end
+		end
+		for k, v in pairs(data.options or {}) do
+			local o = Options[k]
+			if o and type(v) == "table" then
+				pcall(function()
+					if v[1] == "c" then o:SetValueRGB(Color3.fromHex(v[2]), v[3])
+					elseif v[1] == "k" then o:SetValue({ v[2], v[3] })
+					elseif v[1] == "m" then
+						local set = {} for _, x in ipairs(v[2] or {}) do set[x] = true end
+						o:SetValue(set)
+					else o:SetValue(v[2]) end
+				end)
+			end
+		end
+		return true
+	end
+	function SaveManager:List()
+		local out = {}
+		if not listfiles then return out end
+		pcall(function()
+			for _, f in ipairs(listfiles(self.folder)) do
+				local n = string.match(f, "([^/\\]+)%.json$")
+				if n then out[#out + 1] = n end
+			end
+		end)
+		table.sort(out)
+		return out
+	end
+	function SaveManager:BuildConfigSection(tab)
+		if type(tab) == "table" and rawget(tab, "_t") then tab = rawget(tab, "_t") end
+		local g = tab:AddRightGroupbox("Configuration")
+		local nameBox = g:AddInput("TempoCfgName", { Text = "Config name", Default = "", Placeholder = "name" })
+		local list = g:AddDropdown("TempoCfgList", { Text = "Saved configs", Values = self:List(), AllowNull = true })
+		g:AddButton("Save config", function()
+			local n = nameBox.Value ~= "" and nameBox.Value or list.Value
+			if not n or n == "" then Library:Notify("type a config name first", 3) return end
+			if self:Save(n) then Library:Notify("saved " .. n, 2) list:SetValues(self:List()) end
+		end)
+		g:AddButton("Load config", function()
+			local n = list.Value
+			if n and self:Load(n) then Library:Notify("loaded " .. n, 2) end
+		end)
+		g:AddButton("Load this config on start", function()
+			local n = list.Value
+			if not (n and writefile) then return end
+			pcall(function() writefile(self.folder .. "/autoload.txt", n) end)
+			Library:Notify("autoload: " .. n, 2)
+		end)
+		self.ignore.TempoCfgName, self.ignore.TempoCfgList = true, true
+		return g
+	end
+	function Library:_dropEmpty()
+		if self._dropped then return end
+		self._dropped = true
+		for _, g in ipairs(groups) do
+			if (g.n or 0) == 0 and g.sec then pcall(function() g.sec:Destroy() end) end
+		end
+	end
+	function SaveManager:LoadAutoloadConfig()
+		Library._flush()
+		Library:_dropEmpty()
+		if not (readfile and isfile) then return end
+		local ok, n = pcall(function()
+			local p = self.folder .. "/autoload.txt"
+			return isfile(p) and readfile(p)
+		end)
+		if ok and type(n) == "string" and n ~= "" then
+			if self:Load(n) then Library:Notify("loaded config " .. n, 2) end
+		end
+	end
+	getgenv().SaveManager = SaveManager
+	local ThemeManager = lenient({ Library = Library })
+	function ThemeManager:SetLibrary() end
+	function ThemeManager:SetFolder() end
+	function Library._mountInterface()
+		if Library._interface or not Library.ui then return end
+		Library._interface = true
+		pcall(function() Library.ui:mountInterface(Library.ui:Tab("Interface", "sliders")) end)
+	end
+	function ThemeManager:ApplyToTab(tab)
+		Library._wantInterface = true
+		if flushed then Library._mountInterface() end
+	end
+	ThemeManager.BuildInterfaceSection = ThemeManager.ApplyToTab
+	getgenv().ThemeManager = ThemeManager
+	local FluentOptions = setmetatable({}, { __index = function(_, k) return rawget(Options, k) or rawget(Toggles, k) or Options[k] end })
+	local Fluent = loose({ Options = FluentOptions, Unloaded = false })
+	Library:OnUnload(function() Fluent.Unloaded = true end)
+	local FBox = {}
+	local function fbox(gb)
+		return setmetatable({ gb = gb }, { __index = function(_, k)
+			local f = FBox[k]
+			if f then return f end
+			if isMethod(k) then return function() return Stub end end
+		end })
+	end
+	function FBox:AddToggle(id, c) c = c or {} return self.gb:AddToggle(id, { Text = c.Title, Default = c.Default, Tooltip = c.Description, Callback = c.Callback }) end
+	function FBox:AddSlider(id, c) c = c or {} return self.gb:AddSlider(id, { Text = c.Title, Default = c.Default, Min = c.Min, Max = c.Max, Rounding = c.Rounding, Callback = c.Callback }) end
+	function FBox:AddDropdown(id, c) c = c or {} return self.gb:AddDropdown(id, { Text = c.Title, Values = c.Values, Multi = c.Multi, Default = c.Default, AllowNull = c.AllowNull, Callback = c.Callback }) end
+	function FBox:AddInput(id, c) c = c or {} return self.gb:AddInput(id, { Text = c.Title, Default = c.Default, Placeholder = c.Placeholder, Numeric = c.Numeric, Callback = c.Callback }) end
+	function FBox:AddButton(c) c = c or {} return self.gb:AddButton({ Text = c.Title, Func = c.Callback }) end
+	function FBox:AddParagraph(c) c = c or {} return self.gb:AddLabel(tostring(c.Title or "")) end
+	function FBox:AddKeybind(id, c) c = c or {} self.gb:AddLabel(c.Title or id):AddKeyPicker(id, { Default = c.Default, Mode = c.Mode, Text = c.Title, Callback = c.Callback, ChangedCallback = c.ChangedCallback }) return Options[id] end
+	function FBox:AddColorpicker(id, c) c = c or {} self.gb:AddLabel(c.Title or id):AddColorPicker(id, { Default = c.Default, Title = c.Title, Callback = c.Callback }) return Options[id] end
+	FBox.AddColorPicker = FBox.AddColorpicker
+	for _, n in ipairs({ "Toggle", "Slider", "Dropdown", "Input", "Button", "Paragraph", "Keybind", "Colorpicker", "ColorPicker" }) do FBox["Create" .. n] = FBox["Add" .. n] end
+	local function ftab(t)
+		local o = { _t = t }
+		function o:AddSection(title) return fbox(t:AddLeftGroupbox(tostring(type(title) == "table" and (title.Title or title.Name) or title or "Section"))) end
+		o.CreateSection = o.AddSection
+		return setmetatable(o, { __index = function(self, k)
+			if FBox[k] then
+				return function(me, ...)
+					rawset(me, "_box", rawget(me, "_box") or fbox(t:AddLeftGroupbox(t.name)))
+					return FBox[k](rawget(me, "_box"), ...)
+				end
+			end
+			if type(k) == "string" and string.find(k, "^%u") then return function() return Stub end end
+		end })
+	end
+	function Fluent:CreateWindow(opts)
+		local w = Library:CreateWindow(opts)
+		local W = {}
+		function W:AddTab(info) return ftab(w:AddTab(type(info) == "table" and (info.Title or info.Name) or tostring(info))) end
+		W.CreateTab = W.AddTab
+		return loose(W)
+	end
+	function Fluent:Notify(c)
+		c = type(c) == "table" and c or { Content = tostring(c) }
+		Library:Notify({ Title = c.Title, Description = c.Content or c.SubContent, Time = c.Duration })
+	end
+	function Fluent:Destroy() Library:Unload() end
+	getgenv().Fluent = Fluent
+	local function pick(c, a, b) if c[a] ~= nil then return c[a] end return c[b] end
+	local Flags = {}
+	local function relem(o, kind)
+		return setmetatable({}, { __index = function(_, k)
+			if k == "CurrentValue" or k == "Value" or k == "value" then
+				if kind == "dropdown" and type(o.Value) == "table" then local l = {} for v, on in pairs(o.Value) do if on then l[#l + 1] = v end end return l end
+				return o.Value
+			end
+			if k == "CurrentOption" then
+				if type(o.Value) == "table" then local l = {} for v, on in pairs(o.Value) do if on then l[#l + 1] = v end end return l end
+				return { o.Value }
+			end
+			if k == "CurrentKeybind" then return o.Value end
+			if k == "Set" or k == "SetValue" then
+				return function(_, v)
+					if kind == "dropdown" then
+						if o.Multi then local s = {} for _, x in ipairs(type(v) == "table" and v or { v }) do s[x] = true end o:SetValue(s)
+						else o:SetValue(type(v) == "table" and v[1] or v) end
+					else o:SetValue(v) end
+				end
+			end
+			if k == "Refresh" or k == "SetOptions" then return function(_, list) o:SetValues(list) end end
+			if k == "OnChanged" then return function(_, fn) o:OnChanged(fn) end end
+			if isMethod(k) then return function() return Stub end end
+		end })
+	end
+	local function decimals(step) local s = tostring(step or 1) local d = s:match("%.(%d+)$") return d and #d or 0 end
+	local RBox = {}
+	local function rbox(gb, flavor)
+		return setmetatable({ gb = gb, flavor = flavor }, { __index = function(_, k)
+			local f = RBox[k]
+			if f then return f end
+			if isMethod(k) then return function() return Stub end end
+		end })
+	end
+	local function idOf(c) return tostring(pick(c, "Flag", "flag") or pick(c, "Name", "name") or "Control") end
+	local function reg(c, e) local f = pick(c, "Flag", "flag") if f then Flags[f] = e end return e end
+	function RBox:CreateToggle(c)
+		c = c or {}
+		local cb = pick(c, "Callback", "callback")
+		local o = self.gb:AddToggle(idOf(c), { Text = pick(c, "Name", "name"), Default = pick(c, "CurrentValue", "value"), Callback = cb })
+		if cb and o.Value then task.defer(function() pcall(cb, o.Value) end) end
+		return reg(c, relem(o, "toggle"))
+	end
+	function RBox:CreateSlider(c)
+		c = c or {}
+		local range = pick(c, "Range", "range") or { 0, 100 }
+		local o = self.gb:AddSlider(idOf(c), { Text = pick(c, "Name", "name"), Min = range[1], Max = range[2],
+			Default = pick(c, "CurrentValue", "value"), Rounding = decimals(pick(c, "Increment", "increment")),
+			Suffix = pick(c, "Suffix", "suffix"), Callback = pick(c, "Callback", "callback") })
+		return reg(c, relem(o, "slider"))
+	end
+	function RBox:CreateDropdown(c)
+		c = c or {}
+		local multi = pick(c, "MultipleOptions", "multiSelect") or c.Multi
+		local cur = pick(c, "CurrentOption", "value")
+		local def = multi and (type(cur) == "table" and cur or { cur }) or (type(cur) == "table" and cur[1] or cur)
+		local cb = pick(c, "Callback", "callback")
+		local flavor = self.flavor
+		local o = self.gb:AddDropdown(idOf(c), { Text = pick(c, "Name", "name"), Values = pick(c, "Options", "options") or {},
+			Multi = multi, Default = def, AllowNull = true,
+			Callback = cb and function(v)
+				local list = v
+				if type(v) == "table" then list = {} for x, on in pairs(v) do if on then list[#list + 1] = x end end end
+				if flavor == "rayfield" then cb(type(list) == "table" and list or { list }) else cb(list) end
+			end })
+		return reg(c, relem(o, "dropdown"))
+	end
+	function RBox:CreateInput(c)
+		c = c or {}
+		local o = self.gb:AddInput(idOf(c), { Text = pick(c, "Name", "name"), Default = pick(c, "CurrentValue", "value"),
+			Placeholder = pick(c, "PlaceholderText", "placeholder"), Callback = pick(c, "Callback", "callback") })
+		return reg(c, relem(o, "input"))
+	end
+	function RBox:CreateButton(c) c = c or {} self.gb:AddButton({ Text = pick(c, "Name", "name"), Func = pick(c, "Callback", "callback") }) return Stub end
+	function RBox:CreateKeybind(c)
+		c = c or {}
+		local cb = pick(c, "Callback", "callback")
+		local hold = pick(c, "HoldToInteract", "hold")
+		local id = idOf(c)
+		self.gb:AddLabel(pick(c, "Name", "name") or id):AddKeyPicker(id, { Default = pick(c, "CurrentKeybind", "value") or "None",
+			Mode = hold and "Hold" or "Toggle", Text = pick(c, "Name", "name"), Callback = cb,
+			ChangedCallback = pick(c, "OnChanged", "changed") })
+		return reg(c, relem(Options[id], "keybind"))
+	end
+	function RBox:CreateColorPicker(c)
+		c = c or {}
+		local id = idOf(c)
+		self.gb:AddLabel(pick(c, "Name", "name") or id):AddColorPicker(id, { Default = pick(c, "Color", "value"), Title = pick(c, "Name", "name"), Callback = pick(c, "Callback", "callback") })
+		return reg(c, relem(Options[id], "color"))
+	end
+	function RBox:CreateLabel() return Stub end
+	function RBox:CreateParagraph() return Stub end
+	RBox.AddToggle, RBox.AddSlider, RBox.AddDropdown, RBox.AddButton = RBox.CreateToggle, RBox.CreateSlider, RBox.CreateDropdown, RBox.CreateButton
+	local function rtab(t, flavor)
+		local o = { _t = t }
+		function o:CreateSection(name)
+			if type(name) == "table" then name = pick(name, "Name", "name") end
+			rawset(self, "_box", rbox(t:AddLeftGroupbox(tostring(name or t.name)), flavor))
+			return Stub
+		end
+		function o:AddLeftGroupbox(info) return rbox(t:AddLeftGroupbox(type(info) == "table" and pick(info, "Name", "name") or tostring(info)), flavor) end
+		o.AddRightGroupbox = o.AddLeftGroupbox
+		function o:CreateConfigManager() SaveManager:BuildConfigSection(t) return Stub end
+		function o:CreateThemeManager() ThemeManager:ApplyToTab(t) return Stub end
+		return setmetatable(o, { __index = function(self, k)
+			if RBox[k] then
+				return function(me, ...)
+					rawset(me, "_box", rawget(me, "_box") or rbox(t:AddLeftGroupbox(t.name), flavor))
+					return RBox[k](rawget(me, "_box"), ...)
+				end
+			end
+			if isMethod(k) then return function() return Stub end end
+		end })
+	end
+	local function rayLib(flavor)
+		local R = loose({ Flags = Flags, Unloaded = false })
+		Library:OnUnload(function() R.Unloaded = true end)
+		function R:CreateWindow(opts)
+			local w = Library:CreateWindow(opts)
+			local W = loose({})
+			function W:CreateTab(name)
+				if type(name) == "table" then name = pick(name, "Name", "name") or name.Title end
+				return rtab(w:AddTab(tostring(name or "Tab")), flavor)
+			end
+			W.AddTab = W.CreateTab
+			function W:Notify(c) R:Notify(c) end
+			function W:LoadAutoload() SaveManager:LoadAutoloadConfig() end
+			R.Window = W
+			return W
+		end
+		function R:Notify(c)
+			c = type(c) == "table" and c or { Content = tostring(c) }
+			Library:Notify({ Title = pick(c, "Title", "title"), Description = pick(c, "Content", "content"), Time = pick(c, "Duration", "duration") })
+		end
+		function R:LoadConfiguration() SaveManager:LoadAutoloadConfig() end
+		R.LoadAutoload = R.LoadConfiguration
+		function R:Destroy() Library:Unload() end
+		R.Unload = R.Destroy
+		return R
+	end
+	getgenv().Rayfield = rayLib("rayfield")
+	getgenv().RayfieldGen2 = rayLib("gen2")
+	getgenv().OuroFlow = rayLib("ouroflow")
+	task.spawn(function()
+		for _ = 1, 600 do
+			local kp = rawget(Options, "MenuKeybind")
+			if kp and Library.ui then
+				local function apply()
+					local n = kp.Value
+					if n and n ~= "None" and not string.find(n, "^MB") then pcall(function() Library.ui:SetToggleKey(n) end) end
+				end
+				apply()
+				kp:OnChanged(apply)
+				return
+			end
+			task.wait(0.1)
+		end
+	end)
+end
+return (function(...)
+local h0
+local hF
+local hI
+local Objects
+local Options
+local hs
+local hO
+local hR
+local hv
+local hy
+local hU
+local hX
+local hB
+local h_
+local hE
+local h2
+local hH
+local ho
+local hK
+local PlotHandler
+local LocalPlayer
+local hu
+local hQ
+local hx
+local hT
+local hA
+local hW
+local Packs
+local hZ
+local Constants
+local Decor
+local Toggles
+local Habitats
+local hM
+local hq
+local hP
+local ht
+local PlayerStateClient
+local VirtualUser
+local Library
+local Fuse
+local hC
+local hY
+local function fn38(O, P)
+    return Packs[O].Teeth < Packs[P].Teeth
+end
+local function fn42()
+    if hX() then
+        hH:FireServer()
+    end
+end
+local function fn45(T, U)
+    return Constants.Decor[T].Price < Constants.Decor[U].Price
+end
+local function fn67()
+    local l8 = hC()
+    for k, v in Constants.Terrain do
+        local l9 = not l8[k]
+        if l9 ~= false then
+            l9 = hI() >= v.Price
+        end
+        if l9 then
+            hK:FireServer(k)
+            task.wait(Options.BuyTerrainDelay.Value)
+        end
+    end
+end
+local function fn81()
+    if not hP then
+        hA:FireServer(true)
+    end
+end
+local function fn149()
+end
+local function onOrganizeGrid()
+    task.spawn(function()
+        local le_1
+        local ld_1
+        local la = PlotHandler.GetPlotModel()
+        local lb = la and la:FindFirstChild("PlacedItems")
+        if not lb then
+            return
+        end
+        local children = lb:GetChildren()
+        for k, v in children do
+            hQ:FireServer(v)
+            task.wait(0.15)
+        end
+        local lb_2 = os.clock() + 5
+        while true do
+            local lc_1 = #lb:GetChildren() > 0 and os.clock() < lb_2
+            if lc_1 then
+                task.wait(0.2)
+                continue
+            end
+            break
+        end
+        task.wait(0.5)
+        local la_2 = hZ(nil)
+        local lb_3 = 0
+        local lc_2 = {}
+        for k, v in la_2 do
+            le_1, ld_1 = h0(v, 1, lc_2)
+            if le_1 then
+                h2:Fire(v, le_1, 0)
+                table.insert(lc_2, { CFrame = le_1, Size = ld_1 })
+                lb_3 += 1
+                task.wait(0.2)
+            end
+        end
+        Library:Notify((("Organized %*/%* placements"):format(lb_3, #la_2)))
+    end)
+end
+local function fn164(cq)
+    cq:AddLeftGroupbox("Discord", nil, true, false, true):AddButton({
+        Text = "Join Discord For Dupe",
+        Func = function()
+            setclipboard(hy)
+            Library:Notify("Copied Discord invite to clipboard")
+        end
+    })
+end
+local function fn165()
+    local mL = PlayerStateClient.Get("ActiveFuse")
+    local mL_1
+    local mM = typeof(mL) == "table" and tonumber(mL.EndTime)
+    local mM_1
+    if mM then
+        return
+    end
+    mM_1, mL_1 = hF()
+    if mM_1 and mL_1 then
+        hu:FireServer(mM_1, mL_1)
+    end
+end
+local function fn182()
+    local mI = PlayerStateClient.Get("ActiveFuse")
+    local mJ = typeof(mI) == "table" and tonumber(mI.EndTime) and os.time() >= mI.EndTime
+    if mJ then
+        hq:FireServer()
+    end
+end
+local function fn223()
+    local jg = Constants.Rebirths[hv() + 1]
+    if not jg then
+        return false
+    elseif hI() < jg.NeedCash then
+        return false
+    else
+        local jh = PlayerStateClient.Get("IndexEggs")
+        if typeof(jh) ~= "table" then
+            return false
+        end
+        for k, v in jg.NeedHabitat do
+            if not jh[v] then
+                return false
+            end
+        end
+        return true
+    end
+end
+local function fn236()
+    local i7 = {}
+    local i8 = PlayerStateClient.Get("Terrain")
+    if typeof(i8) == "table" then
+        for k, v in i8 do
+            i7[v] = true
+        end
+    end
+    return i7
+end
+local function onMerchantSold()
+    hP = false
+end
+local function fn244(dh)
+    local Value = Options.PlaceStep.Value
+    for k, v in dh do
+        local lA = h0(v, Value)
+        if lA then
+            h2:Fire(v, lA, 0)
+            task.wait(Options.PlaceDelay.Value)
+        end
+    end
+end
+local function fn245(a1)
+    local jD = ho()
+    local jE = {}
+    local jF = {}
+    local jF_3
+    local jG = jD.Habitats or jF
+    local jG_2
+    for k, v in jG do
+        if not a1 or a1[k] then
+            local jR = 1
+            while jR <= v do
+                table.insert(jE, k)
+                jR += 1
+            end
+        end
+    end
+    local jG_1 = jD.Dinosaurs or {}
+    for k, v in jG_1 do
+        jF_3, jG_2 = Objects.GetDinosaurFromKey(k)
+        if not a1 or jG_2 and a1[jG_2] then
+            local j1 = 1
+            while j1 <= v do
+                table.insert(jE, k)
+                j1 += 1
+            end
+        end
+    end
+    if not a1 then
+        local jG_3 = jD.Decor or {}
+        for k, v in jG_3 do
+            local ka = 1
+            while ka <= v do
+                table.insert(jE, k)
+                ka += 1
+            end
+        end
+    end
+    table.sort(jE, function(bl, bm)
+        local jz_1
+        local jy_1
+        jy_1, jz_1 = hO(bl), hO(bm)
+        local jy_2 = jy_1 and jy_1.Size.X * jy_1.Size.Z or 0
+        local jA_1 = jz_1
+        if jA_1 then
+            jA_1 = jz_1.Size.X * jz_1.Size.Z
+        end
+        return jy_2 > (jA_1 or 0)
+    end)
+    return jE
+end
+local function fn300()
+    local lI = PlotHandler.GetPlotModel()
+    local lJ = lI and lI:FindFirstChild("PlacedItems")
+    if not lJ then
+        return
+    end
+    for i, child in lJ:GetChildren() do
+        if child:FindFirstChild("HabitatEgg") then
+            hU:FireServer(child)
+            task.wait(Options.OpenDelay.Value)
+        end
+    end
+end
+local function fn307(aM)
+    local PrimaryPart = aM.PrimaryPart
+    local jq = PrimaryPart and PrimaryPart:IsA("BasePart")
+    if jq then
+        return PrimaryPart
+    end
+    local Base = aM:FindFirstChild("Base")
+    local jq_1 = Base and Base:IsA("BasePart")
+    if jq_1 then
+        return Base
+    end
+    return nil
+end
+local function fn313()
+    hR(hZ(Options.PlaceEggs.Value))
+end
+local function fn339()
+    local iV = tonumber(PlayerStateClient.Get("DinosaurTeeth")) or 0
+    return iV
+end
+local function fn340()
+    hR(hZ(nil))
+end
+local function fn343(aS)
+    local jt_1
+    local js_1
+    js_1, jt_1 = Objects.GetDinosaurFromKey(aS)
+    local js_2 = jt_1 or aS
+    local jt_2 = Habitats:FindFirstChild(js_2) or Decor:FindFirstChild(aS)
+    if not jt_2 then
+        return nil
+    end
+    return ht(jt_2)
+end
+local function fn372(af)
+    local Main = LocalPlayer.PlayerGui:FindFirstChild("Main")
+    local i2 = Main and Main:FindFirstChild("Shop")
+    if not i2 then
+        return 0
+    end
+    local i2_1 = i2.Canvas.Holder.Canvas.Scroll:FindFirstChild(af)
+    local i1_2 = i2_1 and i2_1:FindFirstChild("Stock")
+    if not i1_2 then
+        return 0
+    end
+    local i1_3 = tonumber(i1_2.Text:match("%d+")) or 0
+    return i1_3
+end
+local function fn374()
+    local iQ = (tonumber(PlayerStateClient.Get("Cash")))
+    local iU = if iQ then 1 else 0
+    local iS = 1616 * iU + 2426 * (1 - iU)
+    local iT = 3019 * iU + 2224 * (1 - iU)
+    if not ((iS * 1520 + iT * 1281 + iS * iT) % 16777213 == 11202363) then
+        iQ = 0
+    end
+    return iQ
+end
+local function fn382(K, L)
+    return (Constants.Habitats[K].Price or 0) < (Constants.Habitats[L].Price or 0)
+end
+local function fn391()
+    local iX = tonumber(PlayerStateClient.Get("Rebirth")) or 0
+    return iX
+end
+local function onMerchantOpen(er)
+    local mD = Library.Unloaded or not Toggles.AutoMerchant.Value or hP or typeof(er) ~= "table"
+    if mD then
+        return
+    end
+    local mD_1 = hT[tostring(er.State)] or 0
+    if mD_1 >= (hT[Options.MerchantOffer.Value] or 3) then
+        hP = true
+        hx:FireServer()
+        task.delay(3, function()
+            hP = false
+        end)
+    end
+end
+local function onIdled()
+    if Library.Unloaded then
+        return
+    end
+    if not Toggles.AntiAFK.Value then
+        return
+    end
+    VirtualUser:CaptureController()
+    VirtualUser:ClickButton2(Vector2.new())
+end
+local function fn469()
+    local iZ = {}
+    local i_ = PlayerStateClient.Get("Inventory") or iZ
+    return i_
+end
+local function fn473()
+    local mi = ho()
+    for k, v in h_ do
+        if Options.DecorItems.Value[v] and (mi.Decor and mi.Decor[v] or 0) > 0 then
+            local mj_1 = h0(v, Options.PlaceStep.Value)
+            if mj_1 then
+                h2:Fire(v, mj_1, 0)
+                return
+            end
+        end
+    end
+end
+local function fn477()
+    local mt = tonumber(Options.DecorCashReserve.Value) or 0
+    for k, v in h_ do
+        local mt_1 = Constants.Decor[v]
+        local mv = Options.DecorItems.Value[v] and hs(v) > 0 and hI() - mt_1.Price >= mt
+        if mv then
+            if h0(v, Options.PlaceStep.Value) then
+                hE:FireServer(v)
+                return
+            end
+        end
+    end
+end
+local function fn480()
+    local l0 = tonumber(Options.TeethReserve.Value) or 0
+    for k in Options.BuyPacks.Value do
+        local l0_1 = Packs[k]
+        local l2 = l0_1 and hB() - l0_1.Teeth >= l0
+        if l2 then
+            hM:FireServer(k)
+            task.wait(Options.BuyPackDelay.Value)
+        end
+    end
+end
+local function fn488(ao)
+    local Main = LocalPlayer.PlayerGui:FindFirstChild("Main")
+    local i5 = Main and Main:FindFirstChild("Decor")
+    local i4_1 = i5
+    if i5 then
+        i5 = i4_1.Canvas.Holder.Canvas.Scroll:FindFirstChild(ao)
+    end
+    local i4_2 = i5
+    if i5 then
+        i5 = i4_2:FindFirstChild("Stock")
+    end
+    local i4_3 = i5
+    if not i4_3 then
+        return 0
+    end
+    local i5_1 = tonumber(i4_3.Text:match("%d+")) or 0
+    return i5_1
+end
+local function fn502()
+    local ke = ho()
+    local kf = {}
+    local kh = ke.Dinosaurs or {}
+    for k, v in kh do
+        local ke_1 = Constants.GetDinosaurFromKey(k)
+        local kg_1 = ke_1 and v > 0 and Fuse.CanFuseRarity(ke_1.Rarity)
+        if kg_1 then
+            local insert = table.insert
+            local Rarity = ke_1.Rarity
+            local ki = Constants.LayoutOrderRarity[ke_1.Rarity] or math.huge
+            insert(kf, { Key = k, Count = v, Rarity = Rarity, Order = ki })
+        end
+    end
+    table.sort(kf, function(bB, bC)
+        if bB.Order == bC.Order then
+            return bB.Key < bC.Key
+        end
+        return bB.Order < bC.Order
+    end)
+    for k, v in kf do
+        local ke_2 = #kf
+        local kz = k
+        while kz <= ke_2 do
+            local kA = kz
+            local ke_3 = kf[kA]
+            local kg_3 = k ~= kA or v.Count >= 2
+            local kh_2 = kg_3 and Fuse.GetRecipe(v.Rarity, ke_3.Rarity)
+            if kh_2 then
+                return v.Key, ke_3.Key
+            end
+            kz += 1
+        end
+    end
+    return nil
+end
+local function onUnload()
+    Library:Unload()
+end
+local function fn532()
+    local lR = tonumber(Options.EggCashReserve.Value) or 0
+    for k in Options.BuyEggs.Value do
+        local lR_1 = Constants.Habitats[k]
+        local lT = lR_1
+        if lT then
+            local lU = hv()
+            lT = lU >= (lR_1.NeedRebirth or 0)
+        end
+        if lT then
+            lT = hW(k) > 0
+        end
+        if lT then
+            if hI() - lR_1.Price >= lR then
+                hY:FireServer(k)
+                task.wait(Options.BuyEggDelay.Value)
+            end
+        end
+    end
+end
+Habitats = nil
+ho = nil
+Objects = nil
+hq = nil
+PlotHandler = nil
+hs = nil
+ht = nil
+hu = nil
+hv = nil
+PlayerStateClient = nil
+hx = nil
+hy = nil
+Fuse = nil
+hA = nil
+hB = nil
+hC = nil
+Packs = nil
+hE = nil
+hF = nil
+Constants = nil
+hH = nil
+hI = nil
+Toggles = nil
+hK = nil
+Options = nil
+hM = nil
+LocalPlayer = nil
+hO = nil
+hP = nil
+hQ = nil
+hR = nil
+VirtualUser = nil
+hT = nil
+hU = nil
+Library = nil
+hW = nil
+hX = nil
+hY = nil
+hZ = nil
+h_ = nil
+h0 = nil
+Decor = nil
+h2 = nil
+local ReplicatedStorage
+local ShopGroup
+local ic_1
+local SaveManager
+local io_1
+local il_1
+ReplicatedStorage, VirtualUser, LocalPlayer, Constants, Packs, Fuse, PlayerStateClient, PlotHandler, Objects, h2, hY, hU, hQ, hM, hK, hH, hE, hA, hx, hu, hq, Habitats, Decor = nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil
+local h3 = game:GetService("Players")
+if (hQ and hQ and (not VirtualUser and 139) or LocalPlayer and (hE or not VirtualUser) or (not VirtualUser or LocalPlayer or LocalPlayer and false or (not VirtualUser and false or (LocalPlayer or hQ)))) and ((hE or false or (not VirtualUser or hQ)) and (VirtualUser and LocalPlayer or not VirtualUser and not hE) and ((hQ or not LocalPlayer or not VirtualUser and hE) and (not hQ and 139 or (LocalPlayer or hE)))) or not ((hQ and hQ and (not VirtualUser and 139) or LocalPlayer and (hE or not VirtualUser) or (not VirtualUser or LocalPlayer or LocalPlayer and false or (not VirtualUser and false or (LocalPlayer or hQ)))) and ((hE or false or (not VirtualUser or hQ)) and (VirtualUser and LocalPlayer or not VirtualUser and not hE) and ((hQ or not LocalPlayer or not VirtualUser and hE) and (not hQ and 139 or (LocalPlayer or hE))))) then
+    ReplicatedStorage = game:GetService("ReplicatedStorage")
+else
+    h3 = game:GetService("ReplicatedStorage")
+end
+local StarterPlayer = game:GetService("StarterPlayer")
+VirtualUser = game:GetService("VirtualUser")
+LocalPlayer = h3.LocalPlayer
+local net = require(ReplicatedStorage.Packages.net)
+local packet = require(ReplicatedStorage.Packages.packet)
+Constants = require(ReplicatedStorage.Shared.Config.Constants)
+Packs = require(ReplicatedStorage.Shared.Config.Packs)
+Fuse = require(ReplicatedStorage.Shared.Config.Fuse)
+PlayerStateClient = require(ReplicatedStorage.Packages.DataReplica.PlayerStateClient)
+PlotHandler = require(ReplicatedStorage.Shared.Modules.PlotHandler)
+Objects = require(StarterPlayer.StarterPlayerScripts.Client.Scripts.BuildHandler.Settings).Objects
+PlotHandler.Init()
+h2 = packet("BuildPlace", "String", "CFrameF32U16", "NumberU16")
+hY = net:RemoteEvent("PurchaseShop")
+hU = net:RemoteEvent("BuildOpenEgg")
+hQ = net:RemoteEvent("BuildDelete")
+hM = net:RemoteEvent("BuyPack")
+hK = net:RemoteEvent("TerrainBuy")
+hH = net:RemoteEvent("Rebirth")
+hE = net:RemoteEvent("PurchaseDecor")
+hA = net:RemoteEvent("MerchantRequest")
+hx = net:RemoteEvent("MerchantSell")
+hu = net:RemoteEvent("FuseStart")
+hq = net:RemoteEvent("FuseClaim")
+Habitats = ReplicatedStorage.Shared.Assets.Habitats
+Decor = ReplicatedStorage.Shared.Assets.Decor
+local h9 = {}
+for k, v in Constants.Habitats do
+    local h3_1 = typeof(v) == "table" and v.Habitat
+    if h3_1 then
+        table.insert(h9, v.Habitat)
+    end
+end
+local h4_1 = nil
+local h3_2 = 1
+repeat
+    local h5_1 = {
+        "tvxy",
+        "wjpjlfwrckyy",
+        "fxijsqhcxbjl",
+        "fah",
+        "mxwnu",
+        "dtp",
+        "uhklxkcdkx",
+        "fvqsbucz",
+        "qgddbawfbsr",
+        "relclzbbu",
+        "cbh",
+        "egac",
+        "blejvyznq",
+        "ehdsf",
+        "ylyxubvtkvpw"
+    }
+    if h5_1[(h3_2 * 58 + 9) % 15 + 1] <= h5_1[(h3_2 * 58 + 9) % 15 + 1] then
+        table.sort(h9, fn382)
+        h4_1 = {}
+    else
+        table.sort(h4_1, fn382)
+        h9 = {}
+    end
+    h3_2 = (h3_2 + 0) % 8
+until (h3_2 * 5 + 4) % 8 == 1
+for k in Packs do
+    if k ~= "Limited" then
+        table.insert(h4_1, k)
+    end
+end
+h_ = nil
+table.sort(h4_1, fn38)
+h_ = {}
+for k in Constants.Decor do
+    table.insert(h_, k)
+end
+Library, SaveManager, Options, Toggles, hy, hI, hB, hv, ho, hW, hs, hC, hX, ht, hO, hZ, hF, h0 = nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil
+table.sort(h_, fn45)
+hI = fn374
+hB = fn339
+hv = fn391
+ho = fn469
+hW = fn372
+hs = fn488
+hC = fn236
+hX = fn223
+ht = fn307
+hO = fn343
+hZ = fn245
+hF = fn502
+h0 = function(bK, bL, bM)
+    local Size, kS, kT
+    local kU = PlotHandler.GetPlotModel()
+    local kV = kU and kU:FindFirstChild("Base")
+    local kV_1 = hO(bK)
+    if not kV or not kV_1 then
+        return nil
+    end
+    Size = kV_1.Size
+    kS = Vector3.new(math.max(Size.X - 0.05, 0.05), math.max(Size.Y - 0.05, 0.05), math.max(Size.Z - 0.05, 0.05))
+    kT = OverlapParams.new()
+    kT.FilterType = Enum.RaycastFilterType.Exclude
+    kT.FilterDescendantsInstances = { kV, LocalPlayer.Character }
+    local function kV_2(bY)
+        for k, v in workspace:GetPartBoundsInBox(bY, kS, kT) do
+            local kC_1 = v:FindFirstAncestor("Areas") or v:FindFirstAncestor("Gate")
+            if kC_1 then
+                return true
+            end
+            local Model = v:FindFirstAncestorOfClass("Model")
+            local kD_1 = Model and ht(Model) == v
+            if kD_1 then
+                return true
+            end
+        end
+        if bM then
+            for k, v in bM do
+                local kC_3 = v.CFrame.Position - bY.Position
+                local kD_2 = math.abs(kC_3.X) < (v.Size.X + Size.X) / 2 - 0.05 and math.abs(kC_3.Z) < (v.Size.Z + Size.Z) / 2 - 0.05
+                if kD_2 then
+                    return true
+                end
+            end
+        end
+        return false
+    end
+    local kW_1 = kV.Position.Y + kV.Size.Y / 2 + Size.Y / 2
+    local kX_1 = kV.Size.X / 2 - Size.X / 2
+    local kY = kV.Size.Z / 2 - Size.Z / 2
+    local k2 = -kX_1
+    while bL > 0 and k2 <= kX_1 or bL <= 0 and k2 >= kX_1 do
+        local k3 = k2
+        local k7 = -kY
+        while bL > 0 and k7 <= kY or bL <= 0 and k7 >= kY do
+            local k8 = k7
+            local Position = (kV.CFrame * CFrame.new(k3, 0, k8)).Position
+            local kZ_1 = CFrame.new(Position.X, kW_1, Position.Z)
+            if not kV_2(kZ_1) then
+                return kZ_1, Size
+            end
+            k7 += bL
+        end
+        k2 += bL
+    end
+    return nil
+end
+local h6 = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
+Library = getgenv().Library
+if ((hW or Options) and (h6 and not hC) and (h6 and not hF or hW and hF) or (h6 and hF or hC and not hC) and ((hW or hF) and (hF and Options))) and (not Options and hF and "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/" or (h6 and Options or (false or Options)) or ((SaveManager or Options) and (h6 and hC) or not Options and hW and (h6 and not hC))) or not (((hW or Options) and (h6 and not hC) and (h6 and not hF or hW and hF) or (h6 and hF or hC and not hC) and ((hW or hF) and (hF and Options))) and (not Options and hF and "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/" or (h6 and Options or (false or Options)) or ((SaveManager or Options) and (h6 and hC) or not Options and hW and (h6 and not hC)))) then
+    ic_1 = getgenv().ThemeManager
+    SaveManager = getgenv().SaveManager
+else
+    local _ = getgenv().SaveManager
+    ic_1 = getgenv().SaveManager
+end
+Options = Library.Options
+Toggles = Library.Toggles
+local Window = Library:CreateWindow({
+    Title = "Tempo",
+    Footer = "My Dino Park!",
+    Icon = 18657887261,
+    NotifySide = "Right",
+    ShowCustomCursor = false
+})
+local ia = {
+    Main = Window:AddTab("Main", "gamepad-2"),
+    Automation = Window:AddTab("Automation", "bot"),
+    Settings = Window:AddTab("Settings", "settings")
+}
+hy = "https://discord.gg/K7Qxnxkk46"
+for k, v in ia do
+    fn164(v)
+end
+ShopGroup, io_1, hT, hP, il_1, hR = nil, nil, nil, nil, nil, nil
+local PlacingGroup = ia.Main:AddLeftGroupbox("Placing", "layout-grid")
+PlacingGroup:AddToggle("AutoPlace", { Text = "Auto Place", Default = false })
+PlacingGroup:AddDropdown("PlaceEggs", { Text = "Eggs", Values = h9, Multi = true, Searchable = true, AllowNull = true, Default = {} })
+PlacingGroup:AddToggle("AutoPlaceAll", { Text = "Auto Place All", Default = false })
+PlacingGroup:AddSlider("PlaceStep", { Text = "Grid Step", Default = 5, Min = 1, Max = 25, Rounding = 0 })
+PlacingGroup:AddSlider("PlaceDelay", { Text = "Place Delay", Default = 1, Min = 0.2, Max = 5, Rounding = 1, Suffix = "s" })
+PlacingGroup:AddButton({ Text = "Organize Grid", Func = onOrganizeGrid })
+local EggsGroup = ia.Main:AddRightGroupbox("Eggs", "egg")
+if (io_1 or io_1) and (io_1 or not io_1) or (io_1 or il_1) and (il_1 or io_1) or not ((io_1 or io_1) and (io_1 or not io_1) or (io_1 or il_1) and (il_1 or io_1)) then
+    EggsGroup:AddToggle("AutoOpen", { Text = "Auto Open Egg", Default = false })
+    EggsGroup:AddSlider("OpenDelay", { Text = "Open Delay", Default = 1, Min = 0.2, Max = 5, Rounding = 1, Suffix = "s" })
+    EggsGroup:AddDivider()
+    EggsGroup:AddToggle("AutoBuyEggs", { Text = "Auto Buy Eggs", Default = false })
+    EggsGroup:AddDropdown("BuyEggs", { Text = "Eggs", Values = h9, Multi = true, Searchable = true, AllowNull = true, Default = {} })
+    EggsGroup:AddInput("EggCashReserve", { Text = "Cash Reserve", Default = "0", Numeric = true, Placeholder = "0" })
+    EggsGroup:AddSlider("BuyEggDelay", { Text = "Buy Delay", Default = 1, Min = 0.2, Max = 5, Rounding = 1, Suffix = "s" })
+    ShopGroup = ia.Main:AddLeftGroupbox("Shop", "shopping-cart")
+else
+    ShopGroup:AddToggle("AutoOpen", { Text = "Auto Open Egg", Default = false })
+    ShopGroup:AddSlider("OpenDelay", { Suffix = "s", Text = "Open Delay", Max = 5, Rounding = 1, Min = 0.2, Default = 1 })
+    ShopGroup:AddDivider()
+    ShopGroup:AddToggle("AutoBuyEggs", { Text = "Auto Buy Eggs", Default = false })
+    ShopGroup:AddDropdown("BuyEggs", {
+        Values = EggsGroup,
+        Multi = true,
+        Searchable = true,
+        AllowNull = true,
+        Text = "Eggs",
+        Default = {}
+    })
+    ShopGroup:AddInput("EggCashReserve", { Default = "0", Numeric = true, Placeholder = "0", Text = "Cash Reserve" })
+    ShopGroup:AddSlider("BuyEggDelay", { Max = 5, Rounding = 1, Default = 1, Min = 0.2, Text = "Buy Delay", Suffix = "s" })
+    ia = h9.Main:AddLeftGroupbox("Shop", "shopping-cart")
+end
+ShopGroup:AddToggle("AutoBuyPacks", { Text = "Auto Buy Packs", Default = false })
+ShopGroup:AddDropdown("BuyPacks", { Text = "Packs", Values = h4_1, Multi = true, Searchable = true, AllowNull = true, Default = {} })
+ShopGroup:AddInput("TeethReserve", { Text = "Teeth Reserve", Default = "0", Numeric = true, Placeholder = "0" })
+ShopGroup:AddSlider("BuyPackDelay", { Text = "Buy Delay", Default = 1, Min = 0.2, Max = 5, Rounding = 1, Suffix = "s" })
+local ParkGroup = ia.Main:AddRightGroupbox("Park", "mountain")
+ParkGroup:AddToggle("AutoBuyTerrain", { Text = "Auto Buy Terrain", Default = false })
+ParkGroup:AddSlider("BuyTerrainDelay", { Text = "Terrain Delay", Default = 2, Min = 0.5, Max = 10, Rounding = 1, Suffix = "s" })
+ParkGroup:AddDivider()
+ParkGroup:AddToggle("AutoRebirth", { Text = "Auto Rebirth", Default = false })
+ParkGroup:AddSlider("RebirthDelay", { Text = "Rebirth Delay", Default = 3, Min = 1, Max = 15, Rounding = 1, Suffix = "s" })
+local IncomeDecorGroup = ia.Automation:AddLeftGroupbox("Income Decor", "trees")
+IncomeDecorGroup:AddToggle("AutoBuyDecor", { Text = "Auto Buy Decor", Default = false })
+IncomeDecorGroup:AddToggle("AutoPlaceDecor", { Text = "Auto Place Decor", Default = false })
+IncomeDecorGroup:AddDropdown("DecorItems", { Text = "Decor", Values = h_, Multi = true, Searchable = true, AllowNull = true, Default = {} })
+IncomeDecorGroup:AddInput("DecorCashReserve", { Text = "Cash Reserve", Default = "0", Numeric = true, Placeholder = "0" })
+IncomeDecorGroup:AddSlider("DecorDelay", { Text = "Decor Delay", Default = 1, Min = 0.2, Max = 5, Rounding = 1, Suffix = "s" })
+local MerchantGroup = ia.Automation:AddRightGroupbox("Merchant", "store")
+MerchantGroup:AddToggle("AutoMerchant", { Text = "Auto Sell to Merchant", Default = false })
+MerchantGroup:AddDropdown("MerchantOffer", { Text = "Minimum Offer", Values = { "Average", "Good", "Insane" }, Default = "Good" })
+MerchantGroup:AddSlider("MerchantDelay", { Text = "Request Delay", Default = 2, Min = 1, Max = 10, Rounding = 0, Suffix = "s" })
+local FusionGroup = ia.Automation:AddLeftGroupbox("Fusion", "combine")
+FusionGroup:AddToggle("AutoFuse", { Text = "Auto Fuse", Default = false })
+FusionGroup:AddToggle("AutoCollectFuse", { Text = "Auto Collect Fusion", Default = false })
+FusionGroup:AddSlider("FuseDelay", { Text = "Fusion Delay", Default = 2, Min = 0.5, Max = 10, Rounding = 1, Suffix = "s" })
+local function im(c3, c4, c5)
+    task.spawn(function()
+        while true do
+            local lx = c4 and Options[c4].Value or 1
+            task.wait(lx)
+            if Library.Unloaded then
+                break
+            end
+            if Toggles[c3].Value then
+                pcall(c5)
+            end
+        end
+    end)
+end
+hR = fn244
+im("AutoPlace", nil, fn313)
+im("AutoPlaceAll", nil, fn340)
+im("AutoOpen", "OpenDelay", fn300)
+im("AutoBuyEggs", "BuyEggDelay", fn532)
+im("AutoBuyPacks", "BuyPackDelay", fn480)
+im("AutoBuyTerrain", "BuyTerrainDelay", fn67)
+im("AutoRebirth", "RebirthDelay", fn42)
+im("AutoPlaceDecor", "DecorDelay", fn473)
+im("AutoBuyDecor", "DecorDelay", fn477)
+hT = { Low = 1, Average = 2, Good = 3, Insane = 4 }
+hP = false
+net:Connect("MerchantOpen", onMerchantOpen)
+net:Connect("MerchantSold", onMerchantSold)
+im("AutoMerchant", "MerchantDelay", fn81)
+im("AutoCollectFuse", "FuseDelay", fn182)
+im("AutoFuse", "FuseDelay", fn165)
+task.wait()
+local MenuGroup = ia.Settings:AddLeftGroupbox("Menu")
+local Label = MenuGroup:AddLabel("Menu bind")
+Label:AddKeyPicker("MenuKeybind", { Default = "RightShift", NoUI = true, Text = "Menu keybind" })
+Library.ToggleKeybind = Options.MenuKeybind
+local Anti_AfkGroup = ia.Settings:AddLeftGroupbox("Anti-AFK")
+Anti_AfkGroup:AddToggle("AntiAFK", { Text = "Anti-AFK", Default = true })
+LocalPlayer.Idled:Connect(onIdled)
+local MenuControlGroup = ia.Settings:AddLeftGroupbox("Menu Control")
+MenuControlGroup:AddButton("Unload", onUnload)
+Library:OnUnload(fn149)
+ic_1:SetLibrary(Library)
+SaveManager:SetLibrary(Library)
+SaveManager:IgnoreThemeSettings()
+SaveManager:SetIgnoreIndexes({ "MenuKeybind" })
+ic_1:SetFolder("TempoHub")
+SaveManager:SetFolder("TempoHub/my-dino-park")
+ic_1:SaveDefault("Mint")
+ic_1:ApplyToTab(ia.Settings)
+ic_1:LoadDefault()
+SaveManager:BuildConfigSection(ia.Settings)
+SaveManager:LoadAutoloadConfig()
+end)(...)
