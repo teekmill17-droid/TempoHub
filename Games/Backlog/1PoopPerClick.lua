@@ -17,28 +17,31 @@ if "1" == "1" then
 			end
 		end)
 	end
-	local control = g.__TeekHubControl
-	if not (type(control) == "table" and control.keyRequired == false) then
+	local keyless = false
+	pcall(function()
+		local c = game:GetService("HttpService"):JSONDecode(game:HttpGet("https://raw.githubusercontent.com/teekmill17-droid/TempoHub/main/control.json?t=" .. tostring(os.time())))
+		keyless = c.keyRequired == false
+	end)
+	if not keyless then
 		local key = g.__TempoKey or g.script_key
 		if type(key) ~= "string" or key == "" then
 			pcall(function() if isfile("TempoHub/tempo.key") then key = readfile("TempoHub/tempo.key") end end)
 		end
 		key = type(key) == "string" and key:gsub("%s+", "") or ""
 		local ok, why = false, "no key"
-		if key ~= "" then
+		for try = 1, (key ~= "" and 2 or 0) do
 			local src
 			pcall(function() src = game:HttpGet("https://raw.githubusercontent.com/teekmill17-droid/TempoHub/main/Key.lua?t=" .. tostring(os.time())) end)
 			local fn = src and loadstring(src)
 			if not fn then
-				ok = true
+				why = "couldn't check your key, try again in a minute"
 			else
 				local ran, a, b = pcall(fn, { verify = key })
-				if not ran then ok = true beacon("check crashed: " .. tostring(a))
-				else
-					ok, why = a == true, b
-					if not ok and type(why) == "string" and (why:find("reach") or why:find("try again")) then ok = true end
-				end
+				if not ran then why = "key check failed, try again in a minute" beacon("check crashed: " .. tostring(a))
+				else ok, why = a == true, b end
 			end
+			if ok or not (type(why) == "string" and (why:find("reach") or why:find("try again"))) then break end
+			task.wait(3)
 		end
 		if not ok then
 			beacon(why)
