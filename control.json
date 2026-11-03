@@ -1,6 +1,6 @@
 {
   "enabled": true,
-  "keyRequired": true,
+  "keyRequired": false,
   "minVersion": "6.2.0",
   "message": null,
   "messageKind": "info",
