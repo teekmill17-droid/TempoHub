@@ -1,9 +1,13 @@
 {
- "updated": 1787844731,
+ "updated": 1794131841,
  "games": {
   "10548784271": {
    "script": "Games/TimberPets.lua",
    "name": "My Timber Pets"
+  },
+  "4658598196": {
+   "script": "Games/AOTR.lua",
+   "name": "Attack on Titan Revolution"
   }
  }
 }
