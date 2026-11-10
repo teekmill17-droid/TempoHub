@@ -1,5 +1,5 @@
 {
- "updated": 1794131841,
+ "updated": 1794346173,
  "games": {
   "10548784271": {
    "script": "Games/TimberPets.lua",
@@ -8,6 +8,18 @@
   "4658598196": {
    "script": "Games/AOTR.lua",
    "name": "Attack on Titan Revolution"
+  },
+  "3183403065": {
+   "script": "Games/AnimeAdventures.lua",
+   "name": "Anime Adventures"
+  },
+  "10767876753": {
+   "script": "Games/MartialArtsWorld.lua",
+   "name": "Martial Arts World"
+  },
+  "2655311011": {
+   "script": "Games/AnimeDimensions.lua",
+   "name": "Anime Dimensions"
   }
  }
 }
