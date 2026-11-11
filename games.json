@@ -1,5 +1,5 @@
 {
- "updated": 1794435378,
+ "updated": 1794436679,
  "games": {
   "10548784271": {
    "script": "Games/TimberPets.lua",
@@ -28,6 +28,10 @@
   "7326934954": {
    "script": "Games/99Nights.lua",
    "name": "99 Nights in the Forest"
+  },
+  "66654135": {
+   "script": "Games/MM2.lua",
+   "name": "Murder Mystery 2"
   }
  }
 }
