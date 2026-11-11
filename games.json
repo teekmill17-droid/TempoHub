@@ -1,5 +1,5 @@
 {
- "updated": 1794437729,
+ "updated": 1794438312,
  "games": {
   "10548784271": {
    "script": "Games/TimberPets.lua",
@@ -48,6 +48,10 @@
   "10200395747": {
    "script": "Games/GrowAGarden2.lua",
    "name": "Grow a Garden 2"
+  },
+  "3508322461": {
+   "script": "Games/JujutsuShenanigans.lua",
+   "name": "Jujutsu Shenanigans"
   }
  }
 }
