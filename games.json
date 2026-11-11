@@ -1,5 +1,5 @@
 {
- "updated": 1794439242,
+ "updated": 1794439393,
  "games": {
   "10548784271": {
    "script": "Games/TimberPets.lua",
@@ -72,6 +72,10 @@
   "7219654364": {
    "script": "Games/MurderersVsSheriffs.lua",
    "name": "Murderers VS Sheriffs"
+  },
+  "4568630521": {
+   "script": "Games/HeroesBattlegrounds.lua",
+   "name": "Heroes Battlegrounds"
   }
  }
 }
