@@ -1,5 +1,5 @@
 {
- "updated": 1794346173,
+ "updated": 1794367844,
  "games": {
   "10548784271": {
    "script": "Games/TimberPets.lua",
@@ -20,6 +20,10 @@
   "2655311011": {
    "script": "Games/AnimeDimensions.lua",
    "name": "Anime Dimensions"
+  },
+  "10770779724": {
+   "script": "Games/RagdollBoxing3D.lua",
+   "name": "Ragdoll Boxing 3D"
   }
  }
 }
