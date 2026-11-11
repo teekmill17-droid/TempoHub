@@ -1,5 +1,5 @@
 {
- "updated": 1794439844,
+ "updated": 1794440566,
  "games": {
   "10548784271": {
    "script": "Games/TimberPets.lua",
@@ -92,6 +92,10 @@
   "9911844243": {
    "script": "Games/JumpEscapeBrainrots.lua",
    "name": "+1 Jump to Escape the Brainrots"
+  },
+  "7613921865": {
+   "script": "Games/AnimeExpeditions.lua",
+   "name": "Anime Expeditions"
   }
  }
 }
