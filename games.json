@@ -1,5 +1,5 @@
 {
- "updated": 1794437211,
+ "updated": 1794437594,
  "games": {
   "10548784271": {
    "script": "Games/TimberPets.lua",
@@ -40,6 +40,10 @@
   "1686885941": {
    "script": "Games/Brookhaven.lua",
    "name": "Brookhaven RP"
+  },
+  "6331902150": {
+   "script": "Games/Forsaken.lua",
+   "name": "Forsaken"
   }
  }
 }
