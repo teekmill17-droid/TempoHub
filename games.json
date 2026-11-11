@@ -1,5 +1,5 @@
 {
- "updated": 1794439640,
+ "updated": 1794439746,
  "games": {
   "10548784271": {
    "script": "Games/TimberPets.lua",
@@ -84,6 +84,10 @@
   "4181957649": {
    "script": "Games/UltimateBattlegrounds.lua",
    "name": "Ultimate Battlegrounds"
+  },
+  "9570888371": {
+   "script": "Games/JumpForBrainrots.lua",
+   "name": "Jump for Brainrots"
   }
  }
 }
