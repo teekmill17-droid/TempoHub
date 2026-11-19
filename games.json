@@ -1,0 +1,105 @@
+{
+ "updated": 1794690579,
+ "games": {
+  "10548784271": {
+   "script": "Games/TimberPets.lua",
+   "name": "My Timber Pets"
+  },
+  "4658598196": {
+   "script": "Games/AOTR.lua",
+   "name": "Attack on Titan Revolution"
+  },
+  "3183403065": {
+   "script": "Games/AnimeAdventures.lua",
+   "name": "Anime Adventures"
+  },
+  "10767876753": {
+   "script": "Games/MartialArtsWorld.lua",
+   "name": "Martial Arts World"
+  },
+  "2655311011": {
+   "script": "Games/AnimeDimensions.lua",
+   "name": "Anime Dimensions"
+  },
+  "10770779724": {
+   "script": "Games/RagdollBoxing3D.lua",
+   "name": "Ragdoll Boxing 3D"
+  },
+  "7326934954": {
+   "script": "Games/99Nights.lua",
+   "name": "99 Nights in the Forest"
+  },
+  "66654135": {
+   "script": "Games/MM2.lua",
+   "name": "Murder Mystery 2"
+  },
+  "111958650": {
+   "script": "Games/Arsenal.lua",
+   "name": "Arsenal"
+  },
+  "1686885941": {
+   "script": "Games/Brookhaven.lua",
+   "name": "Brookhaven RP"
+  },
+  "6331902150": {
+   "script": "Games/Forsaken.lua",
+   "name": "Forsaken"
+  },
+  "10200395747": {
+   "script": "Games/GrowAGarden2.lua",
+   "name": "Grow a Garden 2"
+  },
+  "3508322461": {
+   "script": "Games/JujutsuShenanigans.lua",
+   "name": "Jujutsu Shenanigans"
+  },
+  "254394801": {
+   "script": "Games/KAT.lua",
+   "name": "KAT"
+  },
+  "7264587281": {
+   "script": "Games/SniperDuels.lua",
+   "name": "Sniper Duels"
+  },
+  "9670086989": {
+   "script": "Games/OneScope.lua",
+   "name": "One Scope"
+  },
+  "2851381018": {
+   "script": "Games/TaxiBoss.lua",
+   "name": "Taxi Boss"
+  },
+  "7219654364": {
+   "script": "Games/MurderersVsSheriffs.lua",
+   "name": "Murderers VS Sheriffs"
+  },
+  "4568630521": {
+   "script": "Games/HeroesBattlegrounds.lua",
+   "name": "Heroes Battlegrounds"
+  },
+  "5265857965": {
+   "script": "Games/LegendsBattlegrounds.lua",
+   "name": "Legends Battlegrounds"
+  },
+  "4181957649": {
+   "script": "Games/UltimateBattlegrounds.lua",
+   "name": "Ultimate Battlegrounds"
+  },
+  "9570888371": {
+   "script": "Games/JumpForBrainrots.lua",
+   "name": "Jump for Brainrots"
+  },
+  "9911844243": {
+   "script": "Games/JumpEscapeBrainrots.lua",
+   "name": "+1 Jump to Escape the Brainrots"
+  },
+  "7613921865": {
+   "script": "Games/AnimeExpeditions.lua",
+   "name": "Anime Expeditions"
+  },
+  "8172250815": {
+   "script": "Games/StandOut.lua",
+   "name": "Stand Out"
+  }
+ }
+}
