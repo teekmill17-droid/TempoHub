@@ -1,0 +1,35 @@
+{
+  "enabled": true,
+  "keyRequired": false,
+  "minVersion": "6.2.0",
+  "message": null,
+  "messageKind": "info",
+  "_comment": [
+    "Operational control for every TeekHub loader in the wild. Edit and push;",
+    "the loader reads this before anything else, with a cache buster, so a",
+    "change reaches users on their next execute.",
+    "",
+    "enabled      false kills every copy of the hub immediately.",
+    "keyRequired  false is keyless. Flip to true when the key gate goes live",
+    "             - no user has to change their loadstring.",
+    "autoExecute  false means the hub does NOT relaunch itself after a teleport.",
+    "             Flip to true for unattended farming; it re-arms once per",
+    "             session and chains across round changes.",
+    "minVersion   loaders older than this refuse to run and tell the user to",
+    "             fetch a new loadstring.",
+    "message      shown on start. Use it for outages and announcements.",
+    "messageKind  info | warn",
+    "notices      per-game warnings keyed by place or universe id. Set",
+    "             confirm true to make the user choose before it loads;",
+    "             walking away or a failed dialog means it does NOT load."
+  ],
+  "autoExecute": false,
+  "notices": {
+    "10563114921": {
+      "title": "Steal an Egg \u2014 anti-cheat",
+      "text": "This game runs a server-side anti-cheat that kicks with \"removed for cheating\". It has kicked a test account several times and the trigger has not been identified yet, so running the script here can get you booted and may risk the account. Everything else in the hub is unaffected.",
+      "confirmText": "I understand, load it",
+      "confirm": true
+    }
+  }
+}
